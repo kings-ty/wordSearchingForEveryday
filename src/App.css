@@ -1,72 +1,336 @@
+/* src/App.css - 완전히 새로운 디자인과 레이아웃 */
+
+/* 기본 설정 */
+body {
+  margin: 0;
+  font-family: 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #1a1a2e; /* 다크 네이비 배경 */
+  color: #e0e0e0; /* 밝은 회색 텍스트 */
+}
+
+/* 전체 앱 컨테이너 */
 .App {
   text-align: center;
-  background-color: #282c34;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
-}
-
-.App-header {
-  width: 80%;
-  max-width: 600px;
-}
-
-h1 {
-  margin-bottom: 40px;
-}
-
-.input-container {
-  display: flex;
-  gap: 10px;
-  width: 100%;
-}
-
-input[type='text'] {
-  flex-grow: 1;
-  padding: 15px;
-  border-radius: 8px;
-  border: 2px solid #61dafb;
-  font-size: 1.2rem;
-  background-color: #3e4451;
-  color: white;
-}
-
-button {
-  padding: 15px 25px;
-  border-radius: 8px;
-  border: none;
-  background-color: #61dafb;
-  color: #282c34;
-  font-size: 1.2rem;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-button:hover {
-  background-color: #4aadd1;
-}
-
-button:disabled {
-  background-color: #555;
-  cursor: not-allowed;
-}
-
-.translation-result {
-  margin-top: 30px;
-  padding: 20px;
-  background-color: #3e4451;
-  border-radius: 8px;
-  min-height: 50px;
-  width: 100%;
+  justify-content: flex-start;
+  padding: 40px 20px;
   box-sizing: border-box;
 }
 
-.translation-result p {
+/* 헤더 섹션 (로고 + 제목) */
+.App-header {
+  width: 100%;
+  max-width: 800px; /* ⭐ 이전보다 너비 줄여서 세로 정렬에 적합하게 */
+  margin-bottom: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-bottom: 0;
+  gap: 30px; /* 섹션 간 간격 유지 */
+}
+
+.App-title-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 30px;
+}
+
+.App-logo {
+  height: 70px; /* ⭐ 로고 크기 살짝 줄임 */
+  width: 70px;
+  pointer-events: none;
+  margin-bottom: 12px;
+  filter: drop-shadow(0 0 8px rgba(138, 43, 226, 0.5));
+}
+
+.App-main-title {
+  font-size: 2.2em; /* ⭐ 제목 크기 더 줄임 (이전 2.5em -> 3em이었다가 2.2em) */
   margin: 0;
-  color: #c7c7c7;
+  color: #8a2be2;
+  text-shadow: 0 0 12px rgba(138, 43, 226, 0.4);
+  letter-spacing: 0.04em;
+}
+
+.App-subtitle {
+  font-size: 1.0em; /* ⭐ 서브타이틀 크기 조절 */
+  color: #b0b0b0;
+  margin-top: 8px;
+  max-width: 600px;
+  line-height: 1.4;
+}
+
+/* ⭐ 기능 선택 탭 스타일 */
+.feature-tabs {
+  display: flex;
+  width: 100%;
+  max-width: 600px; /* 탭 버튼의 최대 너비 */
+  background-color: #24243e;
+  border-radius: 10px;
+  overflow: hidden; /* 버튼 모서리 처리 */
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+  margin-bottom: 30px;
+}
+
+.tab-button {
+  flex: 1; /* 너비 균등 분배 */
+  padding: 15px 20px;
+  border: none;
+  background-color: transparent;
+  color: #b0b0b0;
+  font-size: 1.1em;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  outline: none;
+  border-bottom: 3px solid transparent; /* 비활성 탭 밑줄 */
+}
+
+.tab-button:hover:not(.active) {
+  background-color: #2c2c4a;
+  color: #e0e0e0;
+}
+
+.tab-button.active {
+  background-color: #8a2be2; /* 활성 탭 배경색 */
+  color: white;
+  border-bottom: 3px solid #6a1bbd; /* 활성 탭 강조 밑줄 */
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+/* ⭐ 기능 콘텐츠 래퍼 (탭에 따라 내용 변경) */
+.feature-content-wrapper {
+  width: 100%;
+  max-width: 800px; /* ⭐ 전체 너비와 동일 */
+  margin-bottom: 30px; /* 결과 박스와의 간격 */
+  display: flex;
+  justify-content: center; /* 내부 섹션 중앙 정렬 */
+}
+
+/* 개별 입력 섹션 (카드) */
+.input-section {
+  width: 100%; /* 너비 꽉 채움 */
+  background-color: #24243e;
+  border-radius: 15px;
+  padding: 35px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+  border: 1px solid #3a3a5e;
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+  box-sizing: border-box;
+}
+
+/* 섹션 제목 */
+.section-title {
+  font-size: 1.6em;
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: #e0e0e0;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #3a3a5e;
+  letter-spacing: 0.03em;
+  display: none; /* ⭐ 탭으로 제목이 대체되므로 숨김 */
+}
+
+/* 입력 그룹 (input/textarea + button) */
+.input-group {
+  display: flex;
+  flex-direction: column; /* 세로 정렬 */
+  gap: 15px;
+  width: 100%;
+}
+
+/* 입력 필드 (input, textarea 공통) */
+.input-field {
+  width: calc(100% - 30px);
+  padding: 15px;
+  border: none;
+  border-radius: 10px;
+  background-color: #3a3a5e;
+  color: #e0e0e0;
+  font-size: 1.1em;
+  transition: all 0.3s ease;
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.2);
+  box-sizing: border-box;
+}
+
+.input-field::placeholder {
+  color: #9a9a9a;
+  opacity: 0.8;
+}
+
+.input-field:focus {
+  background-color: #4a4a6e;
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.3), 0 0 0 3px rgba(138, 43, 226, 0.2);
+  outline: none;
+}
+
+/* 텍스트 영역 특화 */
+.textarea-field {
+  resize: vertical;
+  min-height: 120px;
+}
+
+
+/* 버튼 스타일 */
+.action-button {
+  padding: 14px 25px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 1.05em;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  min-width: 140px;
+  align-self: flex-end; /* 오른쪽 정렬 */
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.action-button:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
+}
+
+.action-button:disabled {
+  background-color: #4a4a4a !important;
+  color: #a0a0a0 !important;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+.primary-button {
+  background-color: #8a2be2;
+  color: white;
+}
+
+.primary-button:hover:not(:disabled) {
+  background-color: #7b24d1;
+}
+
+.secondary-button {
+  background-color: #4c62a0;
+  color: white;
+}
+
+.secondary-button:hover:not(:disabled) {
+  background-color: #3b5085;
+}
+
+/* ⭐ 공통 결과 박스 스타일 */
+.common-result-box {
+  background-color: #1e1e30;
+  border-radius: 10px;
+  padding: 20px;
+  min-height: 150px;
+  max-height: 300px;
+  overflow-y: auto;
+  text-align: left;
+  line-height: 1.7;
+  border: 1px solid #333;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+  width: 100%; /* ⭐ 너비 꽉 채움 */
+  max-width: 800px; /* ⭐ 최대 너비 제한 */
+}
+
+.common-result-box ul {
+  list-style-type: none;
+  padding-left: 0;
+  margin: 0;
+}
+
+.common-result-box ul li {
+  margin-bottom: 8px;
+  padding-left: 15px;
+  position: relative;
+}
+
+.common-result-box ul li::before {
+  content: '•';
+  color: #8a2be2;
+  position: absolute;
+  left: 0;
+  font-size: 1.2em;
+  line-height: 1;
+}
+
+.placeholder-text {
+  color: #888;
+  font-style: italic;
+  margin: 0;
+  text-align: center;
+  padding-top: 30px;
+}
+
+/* 스크롤바 커스터마이징 */
+.common-result-box::-webkit-scrollbar {
+  width: 8px;
+}
+.common-result-box::-webkit-scrollbar-track {
+  background: #2f2f4a;
+  border-radius: 10px;
+}
+.common-result-box::-webkit-scrollbar-thumb {
+  background: #5a5a7a;
+  border-radius: 10px;
+}
+.common-result-box::-webkit-scrollbar-thumb:hover {
+  background: #6a6a8a;
+}
+
+/* 반응형 디자인 - 이제 모바일이든 데스크탑이든 세로 정렬 */
+@media (max-width: 1000px) { /* 넓은 화면에서도 최대 너비 조정 */
+  .App-header {
+    max-width: 700px;
+  }
+  .feature-content-wrapper {
+    max-width: 700px;
+  }
+  .common-result-box {
+    max-width: 700px;
+  }
+}
+
+@media (max-width: 600px) {
+  .App {
+    padding: 20px 10px;
+  }
+  .App-main-title {
+    font-size: 1.8em;
+  }
+  .App-logo {
+    height: 50px;
+    width: 50px;
+  }
+  .App-subtitle {
+    font-size: 0.9em;
+  }
+  .tab-button {
+    font-size: 1em;
+    padding: 12px 10px;
+  }
+  .input-section {
+    padding: 25px;
+  }
+  .input-field {
+    font-size: 1em;
+    padding: 12px;
+  }
+  .action-button {
+    font-size: 0.95em;
+    padding: 12px 18px;
+    min-width: unset;
+  }
+  .common-result-box {
+    min-height: 120px;
+  }
 }
