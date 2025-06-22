@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import './App.css';
+import './App.css'; // CSS 파일 불러오기
 import NewLogo from './assets/new-logo.svg'; // ⭐ 로고 경로 확인
 
 interface DefinitionResponse {
-  definition: string[];
+  definition?: string[]; // 정의 (없을 수도 있음)
+  synonyms?: string[];   // 동의어 (없을 수도 있음)
+  translation?: string;  // 한글 번역 (없을 수도 있음)
 }
 
 // ⭐ 기능 모드를 정의하는 타입
@@ -12,19 +14,23 @@ type FeatureMode = 'word' | 'sentence';
 function App() {
   const [word, setWord] = useState<string>('');
   const [definitions, setDefinitions] = useState<string[]>([]);
+  const [synonyms, setSynonyms] = useState<string[]>([]); // ⭐ synonyms 상태 추가
+  const [koreanTranslation, setKoreanTranslation] = useState<string>(''); // ⭐ 한글 번역 상태 추가
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [sentence, setSentence] = useState<string>('');
   const [correctionResult, setCorrectionResult] = useState<string>('');
 
-  // ⭐ 현재 활성화된 기능 모드 (초기값은 'word')
+  // 현재 활성화된 기능 모드
   const [currentMode, setCurrentMode] = useState<FeatureMode>('word');
 
   const API_BASE_URL = process.env.REACT_APP_API_URL;
 
-  // 단어 정의 API 호출 함수
+  // 단어 정의 및 번역 API 호출 함수
   const fetchDefinition = useCallback(async (text: string) => {
     if (!text) {
       setDefinitions([]);
+      setSynonyms([]);
+      setKoreanTranslation(''); // ⭐ 초기화
       return;
     }
     try {
@@ -37,11 +43,16 @@ function App() {
       });
 
       const data: DefinitionResponse = await response.json();
-      setDefinitions(data.definition);
+
+      setDefinitions(data.definition || []);
+      setSynonyms(data.synonyms || []);
+      setKoreanTranslation(data.translation || ''); // ⭐ 번역 결과 상태 업데이트
 
     } catch (error) {
       console.error('사전 API 호출 오류:', error);
       setDefinitions([]);
+      setSynonyms([]);
+      setKoreanTranslation(''); // ⭐ 에러 시 초기화
     }
   }, [API_BASE_URL]);
 
@@ -51,31 +62,50 @@ function App() {
       setCorrectionResult('');
       return;
     }
-    // ⭐ 여기에 문법 교정 API 호출 로직을 추가합니다.
-    setCorrectionResult("여기에 교정된 문장이 표시됩니다. (현재 임시)");
-    console.log('문법 교정 요청:', text);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/correctSentence`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ sentence: text }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setCorrectionResult(data.correctedText || '교정 결과를 찾을 수 없습니다.');
+      } else {
+        setCorrectionResult(`오류: ${data.error || '알 수 없는 오류'}`);
+        console.error('문법 교정 API 오류 응답:', data);
+      }
+
+    } catch (error) {
+      console.error('문법 교정 API 호출 오류:', error);
+      setCorrectionResult('문장 교정 중 오류가 발생했습니다.');
+    }
   }, [API_BASE_URL]);
 
 
   // 단어 입력 시 디바운스 적용
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (currentMode === 'word') { // ⭐ 현재 모드가 'word'일 때만 호출
+      if (currentMode === 'word') {
         fetchDefinition(word);
       }
     }, 500);
     return () => clearTimeout(timer);
-  }, [word, fetchDefinition, currentMode]); // currentMode 의존성 추가
+  }, [word, fetchDefinition, currentMode]);
 
   // 문장 입력 시 디바운스 적용
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (currentMode === 'sentence') { // ⭐ 현재 모드가 'sentence'일 때만 호출
+      if (currentMode === 'sentence') {
         fetchCorrection(sentence);
       }
     }, 500);
     return () => clearTimeout(timer);
-  }, [sentence, fetchCorrection, currentMode]); // currentMode 의존성 추가
+  }, [sentence, fetchCorrection, currentMode]);
 
 
   // 노션 저장 핸들러
@@ -84,10 +114,12 @@ function App() {
     setIsSaving(true);
     try {
       const definitionText = definitions.join('\n');
+      const synonymsText = (synonyms && synonyms.length > 0) ? synonyms.join(', ') : ''; 
+
       await fetch(`${API_BASE_URL}/api/save`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ word: word, definition: definitionText }),
+        body: JSON.stringify({ word: word, definition: definitionText, synonyms: synonymsText }), 
       });
       alert('노션에 저장되었습니다!');
     } catch (error) {
@@ -105,11 +137,13 @@ function App() {
     setSentence(e.target.value);
   };
 
-  // ⭐ 모드 전환 핸들러
+  // 모드 전환 핸들러
   const handleModeChange = (mode: FeatureMode) => {
     setCurrentMode(mode);
-    // 모드 전환 시 이전 결과 초기화 (원하면)
+    // 모드 전환 시 결과 초기화 (선택 사항)
     // setDefinitions([]);
+    // setSynonyms([]);
+    // setKoreanTranslation('');
     // setCorrectionResult('');
   };
 
@@ -123,7 +157,7 @@ function App() {
           <p className="App-subtitle">Your AI-powered linguistic assistant.</p>
         </div>
 
-        {/* ⭐ 기능 모드 선택 탭 */}
+        {/* 기능 모드 선택 탭 */}
         <div className="feature-tabs">
           <button
             className={`tab-button ${currentMode === 'word' ? 'active' : ''}`}
@@ -139,7 +173,7 @@ function App() {
           </button>
         </div>
 
-        {/* ⭐ 기능 모드에 따른 조건부 렌더링 */}
+        {/* 기능 모드에 따른 조건부 렌더링 */}
         <div className="feature-content-wrapper">
           {currentMode === 'word' && (
             <section className="input-section word-section active-section">
@@ -176,18 +210,40 @@ function App() {
           )}
         </div> {/* feature-content-wrapper 끝 */}
 
-        {/* ⭐ 공통 결과 표시 영역 */}
+        {/* ⭐ 공통 결과 표시 영역 - 정의, 동의어, 번역 모두 표시 ⭐ */}
         <div className="result-box common-result-box">
           {currentMode === 'word' && (
-            definitions && definitions.length > 0 ? (
-              <ul>
-                {definitions.map((def, index) => (
-                  <li key={index}>{def}</li>
-                ))}
-              </ul>
-            ) : (
-              <p className="placeholder-text">사전 검색 결과가 여기에 표시됩니다.</p>
-            )
+            <> {/* 여러 요소를 묶기 위해 Fragment 사용 */}
+              {koreanTranslation && ( // ⭐ 한글 번역이 있을 때만 표시
+                <div className="translation-section">
+                  <h3>한글 번역:</h3>
+                  <p>{koreanTranslation}</p>
+                </div>
+              )}
+
+              {definitions && definitions.length > 0 && ( // ⭐ 정의가 있을 때만 표시
+                <div className="definition-section">
+                  <h3>정의:</h3>
+                  <ul>
+                    {definitions.map((def, index) => (
+                      <li key={index}>{def}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {synonyms && synonyms.length > 0 && ( // ⭐ 동의어가 있을 때만 표시
+                <div className="synonym-section">
+                  <h3>동의어:</h3>
+                  <p>{synonyms.join(', ')}</p> {/* 쉼표로 연결하여 표시 */}
+                </div>
+              )}
+
+              {/* 모든 결과가 없을 때만 placeholder 표시 */}
+              {(!koreanTranslation && (!definitions || definitions.length === 0) && (!synonyms || synonyms.length === 0)) && (
+                  <p className="placeholder-text">사전 검색 결과가 여기에 표시됩니다.</p>
+              )}
+            </>
           )}
           {currentMode === 'sentence' && (
             correctionResult ? (

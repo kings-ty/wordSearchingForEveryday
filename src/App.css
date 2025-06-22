@@ -148,7 +148,8 @@ body {
 }
 
 /* 입력 필드 (input, textarea 공통) */
-.input-field {
+input[type="text"],
+textarea {
   width: calc(100% - 30px);
   padding: 15px;
   border: none;
@@ -161,12 +162,14 @@ body {
   box-sizing: border-box;
 }
 
-.input-field::placeholder {
+input[type="text"]::placeholder,
+textarea::placeholder { /* ⭐ placeholder 스타일 수정 */
   color: #9a9a9a;
   opacity: 0.8;
 }
 
-.input-field:focus {
+input[type="text"]:focus,
+textarea:focus {
   background-color: #4a4a6e;
   box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.3), 0 0 0 3px rgba(138, 43, 226, 0.2);
   outline: none;
@@ -333,4 +336,5 @@ body {
   .common-result-box {
     min-height: 120px;
   }
+  
 }
