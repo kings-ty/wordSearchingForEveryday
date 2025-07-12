@@ -2,10 +2,16 @@ import React, { useState, useEffect, useCallback } from 'react';
 import './App.css'; // CSS 파일 불러오기
 import NewLogo from './assets/new-logo.svg'; // ⭐ 로고 경로 확인
 
+// import { GoogleLogin } from '@react-oauth/google';
+
 interface DefinitionResponse {
   definition?: string[]; // 정의 (없을 수도 있음)
   synonyms?: string[];   // 동의어 (없을 수도 있음)
-  translation?: string;  // 한글 번역 (없을 수도 있음)
+  examples?: string;  // 한글 번역 (없을 수도 있음)
+  phonetics?: {
+    text?: string; // 발음 기호 (없을 수도 있음)
+    audio?: string; // 발음 오디오 URL (없을 수도 있음)
+  }[]; // 발음 정보 배열 (없을 수도 있음)
 }
 
 // ⭐ 기능 모드를 정의하는 타입
@@ -14,27 +20,34 @@ type FeatureMode = 'word' | 'sentence';
 function App() {
   const [word, setWord] = useState<string>('');
   const [definitions, setDefinitions] = useState<string[]>([]);
-  const [synonyms, setSynonyms] = useState<string[]>([]); // ⭐ synonyms 상태 추가
-  const [koreanTranslation, setKoreanTranslation] = useState<string>(''); // ⭐ 한글 번역 상태 추가
+  const [synonyms, setSynonyms] = useState<string[]>([]); // ⭐ synonyms addition
+  const [examples, setExamples] = useState<string[]>([]); // ⭐ Examples addition
+  const [phonetics, setPhonetics] = useState<{ text?: string; audio?: string }[]>([]); // ⭐ Phonetics addition
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [sentence, setSentence] = useState<string>('');
   const [correctionResult, setCorrectionResult] = useState<string>('');
+  const [message, setMessage] = useState<string | null>(null); // ⭐ 메시지 표시를 위한 상태
 
   // 현재 활성화된 기능 모드
   const [currentMode, setCurrentMode] = useState<FeatureMode>('word');
-
-  const API_BASE_URL = process.env.REACT_APP_API_URL;
-
+  const API_LANG_URL = 
+  const showMessage = (msg: string, duration = 3000) => {
+    setMessage(msg);
+    setTimeout(() => {
+      setMessage(null);
+    }, duration);
+  };
   // 단어 정의 및 번역 API 호출 함수
   const fetchDefinition = useCallback(async (text: string) => {
     if (!text) {
       setDefinitions([]);
       setSynonyms([]);
-      setKoreanTranslation(''); // ⭐ 초기화
+      setExamples([]);
+      setPhonetics([]);
       return;
     }
     try {
-      const response = await fetch(`${API_BASE_URL}/api/define`, {
+      const response = await fetch(`${API_LANG_URL}/api/define`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -46,15 +59,16 @@ function App() {
 
       setDefinitions(data.definition || []);
       setSynonyms(data.synonyms || []);
-      setKoreanTranslation(data.translation || ''); // ⭐ 번역 결과 상태 업데이트
+      // editting examples to handle array or string
+      setExamples(data.examples && Array.isArray(data.examples) ? data.examples : []);
+      setPhonetics(data.phonetics || []);
 
     } catch (error) {
       console.error('사전 API 호출 오류:', error);
       setDefinitions([]);
       setSynonyms([]);
-      setKoreanTranslation(''); // ⭐ 에러 시 초기화
     }
-  }, [API_BASE_URL]);
+  }, []);
 
   // 문법 교정 API 호출 함수 (아직 백엔드 기능 없음, 프론트 UI만)
   const fetchCorrection = useCallback(async (text: string) => {
@@ -63,7 +77,7 @@ function App() {
       return;
     }
     try {
-      const response = await fetch(`${API_BASE_URL}/api/correctSentence`, {
+      const response = await fetch(`${API_LANG_URL}/api/correctSentence`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -74,17 +88,17 @@ function App() {
       const data = await response.json();
 
       if (response.ok) {
-        setCorrectionResult(data.correctedText || '교정 결과를 찾을 수 없습니다.');
+        setCorrectionResult(data.correctedText || 'Can not find wrong sentence.');
       } else {
-        setCorrectionResult(`오류: ${data.error || '알 수 없는 오류'}`);
+        setCorrectionResult(`오류: ${data.error || 'Unknown error occurred.'}`);
         console.error('문법 교정 API 오류 응답:', data);
       }
 
     } catch (error) {
       console.error('문법 교정 API 호출 오류:', error);
-      setCorrectionResult('문장 교정 중 오류가 발생했습니다.');
+      setCorrectionResult('Correction failed. Please try again later.');
     }
-  }, [API_BASE_URL]);
+  }, [API_LANG_URL]);
 
 
   // 단어 입력 시 디바운스 적용
@@ -109,25 +123,25 @@ function App() {
 
 
   // 노션 저장 핸들러
-  const handleSave = async () => {
-    if (!word || definitions.length === 0) return;
-    setIsSaving(true);
-    try {
-      const definitionText = definitions.join('\n');
-      const synonymsText = (synonyms && synonyms.length > 0) ? synonyms.join(', ') : ''; 
+  // const handleSave = async () => {
+  //   if (!word || definitions.length === 0) return;
+  //   setIsSaving(true);
+  //   try {
+  //     const definitionText = definitions.join('\n');
+  //     const synonymsText = (synonyms && synonyms.length > 0) ? synonyms.join(', ') : ''; 
 
-      await fetch(`${API_BASE_URL}/api/save`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ word: word, definition: definitionText, synonyms: synonymsText }), 
-      });
-      alert('노션에 저장되었습니다!');
-    } catch (error) {
-      console.error('저장 API 호출 오류:', error);
-      alert('저장에 실패했습니다.');
-    }
-    setIsSaving(false);
-  };
+  //     await fetch(`${API_WORD_URL}/api/save`, {
+  //       method: 'POST',
+  //       headers: { 'Content-Type': 'application/json' },
+  //       body: JSON.stringify({ word: word, definition: definitionText, synonyms: synonymsText }), 
+  //     });
+  //     alert('노션에 저장되었습니다!');
+  //   } catch (error) {
+  //     console.error('저장 API 호출 오류:', error);
+  //     alert('저장에 실패했습니다.');
+  //   }
+  //   setIsSaving(false);
+  // };
 
   const handleWordInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setWord(e.target.value);
@@ -153,8 +167,8 @@ function App() {
         {/* 로고와 제목 섹션 */}
         <div className="App-title-container">
           <img src={NewLogo} className="App-logo" alt="logo" />
-          <h1 className="App-main-title">Grammar & Word Perfector</h1>
-          <p className="App-subtitle">Your AI-powered linguistic assistant.</p>
+          <h1 className="text-3xl font-bold text-gray-800 mb-1">Grammar & Word Corrector</h1>
+          <p className="text-gray-600 text-center">Your AI-powered linguistic assistant.</p>
         </div>
 
         {/* 기능 모드 선택 탭 */}
@@ -163,13 +177,13 @@ function App() {
             className={`tab-button ${currentMode === 'word' ? 'active' : ''}`}
             onClick={() => handleModeChange('word')}
           >
-            단어 검색 & 저장
+            Word searching
           </button>
           <button
             className={`tab-button ${currentMode === 'sentence' ? 'active' : ''}`}
             onClick={() => handleModeChange('sentence')}
           >
-            문법 & 문장 교정
+            Grammer correction
           </button>
         </div>
 
@@ -182,12 +196,12 @@ function App() {
                   type="text"
                   value={word}
                   onChange={handleWordInputChange}
-                  placeholder="영단어를 입력하세요"
+                  placeholder="Writing a word to search"
                   className="input-field"
                 />
-                <button onClick={handleSave} disabled={!definitions || definitions.length === 0} className="action-button primary-button">
-                  {isSaving ? '저장 중...' : '노션에 저장'}
-                </button>
+                {/* <button onClick={handleSave} disabled={!definitions || definitions.length === 0} className="action-button primary-button">
+                  {isSaving ? 'Saving...' : 'Save to Notion'}
+                </button> */}
               </div>
             </section>
           )}
@@ -198,12 +212,13 @@ function App() {
                 <textarea
                   value={sentence}
                   onChange={handleSentenceInputChange}
-                  placeholder="교정할 문장을 입력하세요"
+                  placeholder="Writing a sentence to correct (max 500 characters)"
+                  maxLength={500}
                   rows={5}
                   className="input-field textarea-field"
                 />
                 <button className="action-button secondary-button" disabled={!sentence}>
-                  문장 교정
+                  Correct Sentence
                 </button>
               </div>
             </section>
@@ -213,17 +228,10 @@ function App() {
         {/* ⭐ 공통 결과 표시 영역 - 정의, 동의어, 번역 모두 표시 ⭐ */}
         <div className="result-box common-result-box">
           {currentMode === 'word' && (
-            <> {/* 여러 요소를 묶기 위해 Fragment 사용 */}
-              {koreanTranslation && ( // ⭐ 한글 번역이 있을 때만 표시
-                <div className="translation-section">
-                  <h3>한글 번역:</h3>
-                  <p>{koreanTranslation}</p>
-                </div>
-              )}
-
-              {definitions && definitions.length > 0 && ( // ⭐ 정의가 있을 때만 표시
+            <>
+              {definitions && definitions.length > 0 && (
                 <div className="definition-section">
-                  <h3>정의:</h3>
+                  <h3>Definition:</h3>
                   <ul>
                     {definitions.map((def, index) => (
                       <li key={index}>{def}</li>
@@ -232,24 +240,57 @@ function App() {
                 </div>
               )}
 
-              {synonyms && synonyms.length > 0 && ( // ⭐ 동의어가 있을 때만 표시
+              {synonyms && synonyms.length > 0 && (
                 <div className="synonym-section">
-                  <h3>동의어:</h3>
-                  <p>{synonyms.join(', ')}</p> {/* 쉼표로 연결하여 표시 */}
+                  <h3>Synonym:</h3>
+                  <p>{synonyms.join(', ')}</p>
                 </div>
               )}
 
-              {/* 모든 결과가 없을 때만 placeholder 표시 */}
-              {(!koreanTranslation && (!definitions || definitions.length === 0) && (!synonyms || synonyms.length === 0)) && (
-                  <p className="placeholder-text">사전 검색 결과가 여기에 표시됩니다.</p>
+              {examples && examples.length > 0 && (
+                <div className="example-section">
+                  <h3>Examples:</h3>
+                  <ul>
+                    {examples.map((ex, index) => (
+                      <li key={index}>{ex}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {phonetics && phonetics.length > 0 && (
+                <div className="phonetics-section">
+                  <h3>Phonetics:</h3>
+                  <ul>
+                    {phonetics.map((p, index) => (
+                      <li key={index}>
+                        {p.text}
+                        {p.audio && (
+                          <audio controls>
+                            <source src={p.audio} type="audio/mpeg" />
+                            Your browser does not support the audio element.
+                          </audio>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {(!definitions || definitions.length === 0) &&
+                (!synonyms || synonyms.length === 0) &&
+                (!examples || examples.length === 0) &&
+                (!phonetics || phonetics.length === 0) && (
+                  <p className="placeholder-text">Searching Result.</p>
               )}
             </>
           )}
+
           {currentMode === 'sentence' && (
             correctionResult ? (
               <p>{correctionResult}</p>
             ) : (
-              <p className="placeholder-text">교정 결과가 여기에 표시됩니다.</p>
+              <p className="placeholder-text">Correcting Result.</p>
             )
           )}
         </div>
