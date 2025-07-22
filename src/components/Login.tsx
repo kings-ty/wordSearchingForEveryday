@@ -1,18 +1,12 @@
-// src/components/login.tsx
+// src/components/Login.tsx
 import React from 'react';
-import './Login.css'; 
+import './Login.css';
 
 const Login = () => {
-  const handleConnectNotion = async () => {
-    try {
-      const response = await fetch('http://localhost:8000/connect-notion');
-      const data = await response.json();
-      if (data.authorization_url) {
-        window.location.href = data.authorization_url;
-      }
-    } catch (error) {
-      console.error('Notion 연결 실패:', error);
-    }
+  const handleConnectNotion = () => {
+    // fetch를 사용하지 않고, 브라우저가 직접 FastAPI 엔드포인트로 이동하도록 합니다.
+    // FastAPI는 RedirectResponse를 통해 Notion OAuth URL로 최종 리다이렉션을 유도합니다.
+    window.location.href = 'http://localhost:8000/connect-notion';
   };
 
   return (
@@ -22,10 +16,10 @@ const Login = () => {
           src="https://upload.wikimedia.org/wikipedia-logo.svg"
           alt="Wikipedia Logo"
         />
-        <h2>Notion 계정 연동</h2>
-        <p>단어장을 Notion에 자동으로 저장하려면 계정을 연결하세요.</p>
+        <h2>Notion Login</h2>
+        <p>Please connect with Notion for saving words</p>
         <button className="connect-button" onClick={handleConnectNotion}>
-          🔗 Notion 계정 연결하기
+          🔗 Notion Connecting
         </button>
       </div>
     </div>
