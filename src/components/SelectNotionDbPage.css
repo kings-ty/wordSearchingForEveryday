@@ -1,0 +1,99 @@
+/* src/components/SelectNotionDbPage.css */
+.select-db-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #1a1a2e; /* App 배경색과 유사하게 */
+  color: #e0e0e0;
+  padding: 20px;
+}
+
+.select-db-box {
+  background-color: #2a2a4a;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  text-align: center;
+  max-width: 600px;
+  width: 100%;
+}
+
+.select-db-box h2 {
+  font-size: 2em;
+  margin-bottom: 15px;
+  color: #ffffff;
+}
+
+.select-db-box p {
+  font-size: 1.1em;
+  margin-bottom: 25px;
+  color: #b0b0d0;
+}
+
+.database-list {
+  list-style: none;
+  padding: 0;
+  margin-bottom: 30px;
+  max-height: 300px; /* 스크롤 가능하도록 높이 제한 */
+  overflow-y: auto;
+  border: 1px solid #4a4a6a;
+  border-radius: 8px;
+}
+
+.database-item {
+  background-color: #3a3a5a;
+  padding: 15px 20px;
+  margin-bottom: 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  text-align: left;
+  font-size: 1.05em;
+  color: #e0e0e0;
+}
+
+.database-item:last-child {
+  margin-bottom: 0;
+}
+
+.database-item:hover {
+  background-color: #4a4a7a;
+  transform: translateY(-2px);
+}
+
+.database-item.selected {
+  background-color: #6a5acd; /* 보라색 계열 */
+  border: 2px solid #8a7acd;
+  font-weight: bold;
+  box-shadow: 0 4px 12px rgba(106, 90, 205, 0.3);
+}
+
+.submit-button {
+  background-color: #6a5acd; /* 보라색 계열 */
+  color: white;
+  padding: 12px 25px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1em;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  margin-top: 20px;
+}
+
+.submit-button:hover:not(:disabled) {
+  background-color: #7a6acd;
+  transform: translateY(-2px);
+}
+
+.submit-button:disabled {
+  background-color: #5a5a7a;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.error-message {
+  color: #ff6b6b;
+  margin-top: 15px;
+  font-weight: bold;
+}

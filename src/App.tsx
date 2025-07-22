@@ -1,10 +1,13 @@
 // App.tsx
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import MainApp from './MainApp'; // 기존 MainApp
+import MainApp from './MainApp'; 
 import Login from './components/Login';
 import NotionCallback from './components/NotionCallback';
-import { UserProvider } from './contexts/UserContext'; // UserProvider
+import { UserProvider } from './contexts/UserContext'; 
+import SelectNotionDbPage from './components/SelectNotionDbPage';
+
+
 function App() {
   return (
     <Router>
@@ -13,8 +16,7 @@ function App() {
           <Route path="/" element={<MainApp />} />
           <Route path="/login" element={<Login />} />
           <Route path="/oauth/notion/callback" element={<NotionCallback />} />
-          {/* 필요한 경우 대시보드 라우트 추가 */}
-          {/* <Route path="/dashboard" element={<DashboardPage />} /> */}
+          <Route path="/select-notion-db" element={<SelectNotionDbPage />} />
         </Routes>
       </UserProvider>
     </Router>
