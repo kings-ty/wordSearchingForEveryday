@@ -85,6 +85,8 @@ const NotionCallback = () => {
       console.error('No authorization code found in URL.');
       alert('Notion 인증 코드를 받지 못했습니다.');
       navigate('/login');
+      alert('Notion 인증 코드를 받지 못했습니다.');
+      navigate('/login');
     }
   }, [location.search, navigate, loginUser, user]); // user를 의존성 배열에 추가하여 user 상태 변화에 반응
 
