@@ -1,29 +1,31 @@
 // src/MainApp.tsx
 import React, { useState, useEffect, useCallback } from 'react';
-import './MainApp.css'; // CSS 파일 불러오기
-import NewLogo from './assets/new-logo.svg'; // ⭐ 로고 경로 확인
+import './MainApp.css';
+import NewLogo from './assets/new-logo.svg';
 
-import { useUser } from './contexts/UserContext'; // UserContext 훅 임포트
-import { useNavigate } from 'react-router-dom'; // useNavigate 훅 임포트
-import axios from 'axios'; // axios 임포트 (npm install axios 필요)
+import { useUser } from './contexts/UserContext';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 interface DefinitionResponse {
   definition?: string[];
   synonyms?: string[];
-  examples?: string | string[]; // examples가 string[] 또는 string일 수 있도록 수정
+  examples?: string | string[];
   phonetics?: {
     text?: string;
     audio?: string;
   }[];
 }
 
-const API_BASE_URL = 'http://localhost:8000'; // FastAPI 백엔드의 기본 URL
+const API_BASE_URL = 'http://localhost:8000';
 
 type FeatureMode = 'word' | 'sentence';
 
-function MainApp() { // ⭐ App -> MainApp으로 이름 변경
-  const { user, logoutUser } = useUser(); // UserContext에서 user 상태와 logoutUser 함수 가져오기
-  const navigate = useNavigate(); // navigate 훅 초기화
+function MainApp() {
+  // UserContext에서 user, logoutUser, isAppReady 상태를 가져옵니다.
+  // loadUserNotionData는 이제 UserContext 내부에서만 사용되므로 여기서는 제거합니다.
+  const { user, logoutUser, isAppReady } = useUser(); 
+  const navigate = useNavigate();
 
   const [word, setWord] = useState<string>('');
   const [definitions, setDefinitions] = useState<string[]>([]);
@@ -35,10 +37,8 @@ function MainApp() { // ⭐ App -> MainApp으로 이름 변경
   const [correctionResult, setCorrectionResult] = useState<string>('');
   const [message, setMessage] = useState<string | null>(null);
 
-  // Current feature mode state
   const [currentMode, setCurrentMode] = useState<FeatureMode>('word');
 
-  // API_LANG_URL을 API_BASE_URL과 동일하게 설정 (만약 다른 API라면 수정 필요)
   const API_LANG_URL = API_BASE_URL;
 
   const showMessage = (msg: string, duration = 3000) => {
@@ -48,7 +48,6 @@ function MainApp() { // ⭐ App -> MainApp으로 이름 변경
     }, duration);
   };
 
-  // 단어 정의 및 번역 API 호출 함수
   const fetchDefinition = useCallback(async (text: string) => {
     if (!text) {
       setDefinitions([]);
@@ -63,7 +62,6 @@ function MainApp() { // ⭐ App -> MainApp으로 이름 변경
 
       setDefinitions(data.definition || []);
       setSynonyms(data.synonyms || []);
-      // examples가 string[] 또는 string일 수 있으므로 Array.isArray로 확인
       setExamples(data.examples && Array.isArray(data.examples) ? data.examples : (typeof data.examples === 'string' ? [data.examples] : []));
       setPhonetics(data.phonetics || []);
 
@@ -77,7 +75,6 @@ function MainApp() { // ⭐ App -> MainApp으로 이름 변경
     }
   }, [API_LANG_URL]);
 
-  // 문법 교정 API 호출 함수
   const fetchCorrection = useCallback(async (text: string) => {
     if (!text) {
       setCorrectionResult('');
@@ -102,7 +99,6 @@ function MainApp() { // ⭐ App -> MainApp으로 이름 변경
   }, [API_LANG_URL]);
 
 
-  // 단어 입력 시 디바운스 적용
   useEffect(() => {
     const timer = setTimeout(() => {
       if (currentMode === 'word') {
@@ -112,7 +108,6 @@ function MainApp() { // ⭐ App -> MainApp으로 이름 변경
     return () => clearTimeout(timer);
   }, [word, fetchDefinition, currentMode]);
 
-  // 문장 입력 시 디바운스 적용
   useEffect(() => {
     const timer = setTimeout(() => {
       if (currentMode === 'sentence') {
@@ -122,35 +117,50 @@ function MainApp() { // ⭐ App -> MainApp으로 이름 변경
     return () => clearTimeout(timer);
   }, [sentence, fetchCorrection, currentMode]);
 
+  // UserContext에서 isAppReady와 user 상태를 관리하므로,
+  // 여기서는 loadUserNotionData를 직접 호출하는 useEffect는 더 이상 필요 없습니다.
+  // useEffect(() => {
+  //   if (isAppReady && user && user.appUserId && !user.notionConnected) {
+  //     loadUserNotionData(user.appUserId);
+  //   }
+  // }, [isAppReady, user, loadUserNotionData]);
 
-  // 노션 저장 핸들러
+
   const handleSave = async () => {
     if (!word || definitions.length === 0) {
       showMessage('단어와 정의가 필요합니다.');
       return;
     }
-    // 사용자가 Notion 연동이 되어있는지 확인
-    if (!user || !user.notionAccessToken) {
+    // 사용자가 Notion 연동이 되어있고, vocabularyDbId가 모두 있는지 확인
+    if (!user || !user.notionConnected) {
       showMessage('Notion에 저장하려면 먼저 Notion과 연결해주세요.');
       navigate('/login'); // 로그인 페이지로 이동하여 Notion 연결 유도
       return;
     }
+    // Notion 연동은 되었지만 단어장이 선택되지 않은 경우
+    if (!user.notionVocabularyDbId) {
+      showMessage('Notion 단어장이 선택되지 않았습니다. 단어장을 선택해주세요.');
+      navigate('/select-notion-db'); // 단어장 선택 페이지로 이동
+      return;
+    }
 
     setIsSaving(true);
+    console.log('Saving to Notion:', { word, definitions, synonyms, user });
+    
     try {
       const definitionText = definitions.join('\n');
       const synonymsText = (synonyms && synonyms.length > 0) ? synonyms.join(', ') : '';
-
+      
       // FastAPI의 save-to-notion 엔드포인트 호출
+      // 이제 appUserId만 전달합니다. 백엔드에서 access_token과 database_id를 조회합니다.
       const response = await axios.post(`${API_BASE_URL}/api/notion/save-to-notion`, {
         word: word,
         definition: definitionText,
         synonyms: synonymsText,
-        access_token: user.notionAccessToken, // Notion access_token 전달 (보안 주의!)
+        app_user_id: user.appUserId, // 앱 내부 사용자 ID 전달
       });
-
       console.log('노션 저장 응답:', response.data);
-      showMessage('노션에 저장되었습니다!');
+      alert('노션에 저장되었습니다!');
     } catch (error) {
       console.error('노션 저장 API 호출 오류:', error);
       showMessage('노션 저장에 실패했습니다.');
@@ -167,29 +177,31 @@ function MainApp() { // ⭐ App -> MainApp으로 이름 변경
     setSentence(e.target.value);
   };
 
-  // 모드 전환 핸들러
   const handleModeChange = (mode: FeatureMode) => {
     setCurrentMode(mode);
-    // 모드 전환 시 결과 초기화 (선택 사항)
-    // setDefinitions([]);
-    // setSynonyms([]);
-    // setExamples([]);
-    // setPhonetics([]);
-    // setCorrectionResult('');
   };
 
   const handleLogout = () => {
     logoutUser();
     showMessage('로그아웃 되었습니다.');
-    navigate('/login'); // 로그아웃 후 로그인 페이지로 이동
+    navigate('/login');
   };
+
+  // 앱이 준비되지 않았다면 (UserContext에서 isAppReady가 false) 로딩 상태 표시
+  if (!isAppReady) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', backgroundColor: '#1a1a2e', color: 'white' }}>
+        <p>Loading application...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="App">
       <header className="App-header">
         {/* 사용자 정보 섹션 - 오른쪽 상단 */}
         <div className="user-info-section">
-          {user ? (
+          {user && user.name ? (
             <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }} onClick={handleLogout}>
               {user.avatarUrl && (
                 <img
@@ -202,7 +214,12 @@ function MainApp() { // ⭐ App -> MainApp으로 이름 변경
               <span style={{ color: 'gray', marginLeft: '5px' }}>(로그아웃)</span>
             </div>
           ) : (
+            // 사용자가 로그인되어 있지 않거나, Notion 연동이 안 된 경우
             <button className="login-prompt-button" onClick={() => navigate('/login')}>로그인/Notion 연결</button>
+          )}
+          {/* Notion 연동은 되었지만 DB가 선택되지 않은 경우를 위한 추가 버튼 (선택 사항) */}
+          {user && user.notionConnected && !user.notionVocabularyDbId && (
+            <button className="login-prompt-button ml-2" onClick={() => navigate('/select-notion-db')}>단어장 선택</button>
           )}
         </div>
 
@@ -241,8 +258,8 @@ function MainApp() { // ⭐ App -> MainApp으로 이름 변경
                   placeholder="Writing a word to search"
                   className="input-field"
                 />
-                {/* 노션 저장 버튼 - 사용자 로그인 및 Notion 연결 시에만 표시 */}
-                {user && user.notionAccessToken && (
+                {/* 노션 저장 버튼 - 사용자 로그인 및 Notion 연결 및 단어장 선택 시에만 표시 */}
+                {user && user.notionConnected && user.notionVocabularyDbId && (
                   <button
                     onClick={handleSave}
                     disabled={!word || definitions.length === 0 || isSaving}
@@ -274,7 +291,7 @@ function MainApp() { // ⭐ App -> MainApp으로 이름 변경
           )}
         </div> {/* feature-content-wrapper 끝 */}
 
-        {/* ⭐ 공통 결과 표시 영역 - 정의, 동의어, 번역 모두 표시 ⭐ */}
+        {/* 공통 결과 표시 영역 */}
         <div className="result-box common-result-box">
           {currentMode === 'word' && (
             <>
