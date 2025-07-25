@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useUser } from '../contexts/UserContext'; // UserContext로부터 user 가져오기
-import '../components/SelectNotionDbpage.css'; 
+import '../components/SelectNotionDbPage.css'; 
 
 const API_BASE_URL = 'http://localhost:8000'; // FastAPI 백엔드 URL
 
